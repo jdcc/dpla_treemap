@@ -71,16 +71,22 @@
             <option value="provider.name">Provider</option>
             <option value="sourceResource.contributor">Contributor</option>
             <option value="sourceResource.language.name">Language</option>
-            <option value="sourceResource.format">Format</option>
+            <option value="sourceResource.format">Source Format</option>
             <option value="sourceResource.date.begin">Start Date</option>
+            <option value="sourceResource.spatial.name">Place Name</option>
+            <option value="sourceResource.spatial.state">State</option>
+            <option value="hasView.format">Digital Format</option>
         </select>,
         then by
         <select id="inner-field">
             <option value="provider.name">Provider</option>
             <option value="sourceResource.contributor">Contributor</option>
             <option value="sourceResource.language.name">Language</option>
-            <option value="sourceResource.format">Format</option>
+            <option value="sourceResource.format">Source Format</option>
             <option value="sourceResource.date.begin">Start Date</option>
+            <option value="sourceResource.spatial.name">Place Name</option>
+            <option value="sourceResource.spatial.state">State</option>
+            <option value="hasView.format">Digital Format</option>
         </select>
     </div>
 <div id="rect-label"></div>
@@ -115,19 +121,17 @@
             .attr("height", chartHeight)
             .append("svg:g");
 
-    d3.json("data2.json", function(data) { fetchedData = data; makeTreemap(data[3]); zoom(data[3]); });
+    d3.json("data2.json", function(data) { fetchedData = data; replaceTreemap(); });
 
-    d3.selectAll("select").on("change", function() {
+    d3.selectAll("select").on("change", replaceTreemap);
+
+    function replaceTreemap() {
         var outerField = d3.select('#outer-field').node().value,
         innerField = d3.select('#inner-field').node().value;
         selectedData = fetchedData.reduce(function(selected, dataset) { return selected ? selected : dataset.innerField == innerField && dataset.outerField == outerField ? dataset : null; }, null);
-        console.log(selectedData);
         makeTreemap(selectedData);
         zoom(selectedData);
-        /*treemap.value(this.value == "size" ? size : count)
-          .nodes(root);
-          zoom(node);*/
-    });
+    }
 
     function makeTreemap(data) {
         d3.select('svg').attr('width', 0).attr('height', 0).remove();
@@ -162,7 +166,8 @@
                     return "p-" + d.id;
                 });
         var parentEnterTransition = parentCells.enter()
-                .append("g")
+                //.append('g')
+                .insert("g", ':first-child')
                 .attr("class", "cell parent")
                 .on("click", function(d) {
                     zoom(d);

@@ -7,7 +7,10 @@ fields = [
     'sourceResource.language.name',
     'sourceResource.format',
     'sourceResource.date.begin',
-    'provider.name'
+    'provider.name',
+    'sourceResource.spatial.name',
+    'sourceResource.spatial.state',
+    'hasView.format'
 ]
 permutations = fields.permutation(2).to_a
 permutations += fields.map{|f| [f, f]}
@@ -66,10 +69,12 @@ class JsonBuilder
         other_children = []
         inner_field_facets.reject!{|iff| iff['count'].to_i < record_percent_threshold * other_record_count}
         inner_field_facets.each do |iff|
+            other_record_count -= iff['count'].to_i
             other_children << {:name => %Q|"#{iff[inner_facet_item]}"|, :size => iff['count'], :id => "Other-#{iff[inner_facet_item]}"}
         end
 
-        output[:children] << {:name => 'Other', :id => 'Other', :size => other_record_count, :children => other_children}
+        other_children << {:name => 'Other', :id => 'Other-Other', :size => other_record_count}
+        output[:children] << {:name => 'Other', :id => 'Other', :children => other_children}
         output
     end
 end
