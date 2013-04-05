@@ -2,55 +2,27 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <title>Treemap 29 - Neat Zoom Effect</title>
+    <title>The Tree of DPLA Records</title>
+    <link href='http://fonts.googleapis.com/css?family=Noto+Sans' rel='stylesheet' type='text/css'>
     <script type="text/javascript" src="d3.js"></script>
     <style type="text/css">
         body {
             overflow: hidden;
             margin: 0;
             font-size: 12px;
-            font-family: "Helvetica Neue", Helvetica;
+            font-family: "Noto Sans", Helvetica;
+            padding: 2em;
         }
 
-        #chart, #header, #footer {
-            position: absolute;
-            top: 0;
-        }
-
-        #header, #footer {
-            z-index: 1;
-            display: block;
-            font-size: 36px;
-            font-weight: 300;
-            text-shadow: 0 1px 0 #fff;
-        }
-
-        #header.inverted, #footer.inverted {
-            color: #fff;
-            text-shadow: 0 1px 4px #000;
-        }
-
-        #header {
-            top: 80px;
-            left: 140px;
-            width: 1200px;
-        }
-
-        #footer {
-            top: 680px;
-            right: 140px;
-            text-align: right;
+        #treemap {
+            font-family: Arial;
+            text-align: center;
+            margin-top: 2em;
         }
 
         rect {
             pointer-events: all;
             cursor: pointer;
-        }
-
-        .chart {
-            display: block;
-            margin: auto;
-            margin-top: 40px;
         }
 
         .label {
@@ -83,20 +55,34 @@
             padding: 0.2em 0.5em;
             border-radius: 0.5em;
         }
+        #field-selector {
+            font-size: 2.5em;
+            text-align: center;
+        }
+        #field-selector select {
+            font-size: 1em;
+        }
     </style>
 </head>
 <body>
-<div id="body"></div>
-<div id="footer">
-    <div style="display:none">
-        <select>
-            <option value="size">Size</option>
-            <option value="count">Count</option>
+    <div id="field-selector">
+        Group first by
+        <select id="outer-field">
+            <option value="provider.name">Provider</option>
+            <option value="sourceResource.contributor">Contributor</option>
+            <option value="sourceResource.language.name">Language</option>
+            <option value="sourceResource.format">Format</option>
+            <option value="sourceResource.date.begin">Start Date</option>
+        </select>,
+        then by
+        <select id="inner-field">
+            <option value="provider.name">Provider</option>
+            <option value="sourceResource.contributor">Contributor</option>
+            <option value="sourceResource.language.name">Language</option>
+            <option value="sourceResource.format">Format</option>
+            <option value="sourceResource.date.begin">Start Date</option>
         </select>
     </div>
-    <div class="chart" style="width: 100%; height: 100%">
-    </div>
-</div>
 <div id="rect-label"></div>
 </body>
 
@@ -111,6 +97,7 @@
     var transitionDuration = 500;
     var root;
     var node;
+    var fetchedData;
 
     var treemap = d3.layout.treemap()
             .round(false)
@@ -121,13 +108,44 @@
                 return d.size;
             });
 
-    var chart = d3.select("#body").append("div")
+    var chart = d3.select("body").append("div")
+            .attr('id', 'treemap')
             .append("svg:svg")
             .attr("width", chartWidth)
             .attr("height", chartHeight)
             .append("svg:g");
 
-    d3.json("data2.json", function(data) {
+    d3.json("data2.json", function(data) { fetchedData = data; makeTreemap(data[3]); zoom(data[3]); });
+
+    d3.selectAll("select").on("change", function() {
+        var outerField = d3.select('#outer-field').node().value,
+        innerField = d3.select('#inner-field').node().value;
+        selectedData = fetchedData.reduce(function(selected, dataset) { return selected ? selected : dataset.innerField == innerField && dataset.outerField == outerField ? dataset : null; }, null);
+        console.log(selectedData);
+        makeTreemap(selectedData);
+        zoom(selectedData);
+        /*treemap.value(this.value == "size" ? size : count)
+          .nodes(root);
+          zoom(node);*/
+    });
+
+    function makeTreemap(data) {
+        d3.select('svg').attr('width', 0).attr('height', 0).remove();
+      treemap = d3.layout.treemap()
+            .round(false)
+            .size([chartWidth, chartHeight])
+            .sticky(true)
+            .padding([headerHeight + 1, 1, 1, 1])
+            .value(function(d) {
+                return d.size;
+            });
+
+        chart = d3.select('#treemap')
+            .append("svg:svg")
+            .attr("width", chartWidth)
+            .attr("height", chartHeight)
+            .append("svg:g");
+
         node = root = data;
         var nodes = treemap.nodes(root);
 
@@ -259,14 +277,8 @@
         childrenCells.exit()
                 .remove();
 
-        d3.select("select").on("change", function() {
-            treemap.value(this.value == "size" ? size : count)
-                    .nodes(root);
-            zoom(node);
-        });
+    }
 
-        zoom(node);
-    });
 
 
 
@@ -279,6 +291,9 @@
         return 1;
     }
 
+    function queryString(d) {
+
+    }
 
     //and another one
     function textHeight(d) {
@@ -328,7 +343,9 @@
         } else if (d.depth == 1) {
             d3.select('#rect-label').transition().duration(transitionDuration + 200).style('opacity', 1);
             d3.select('svg').on('mousemove', function() {
-                d3.select('#rect-label').style('left', function() { return d3.mouse(d3.select('svg').node())[0] + 15 + 'px'; }).style('top', function() { return d3.mouse(d3.select('svg').node())[1] + 15 + 'px'; })
+                d3.select('#rect-label')
+                    .style('left', function() { return (d3.select('svg').node().offsetLeft + d3.mouse(d3.select('svg').node())[0] + 15) + 'px'; })
+                    .style('top', function() { return (d3.select('svg').node().offsetTop + d3.mouse(d3.select('svg').node())[1] + 15) + 'px'; });
             });
             chart.selectAll('.cell.child')
                 .on('mouseenter', function() {
