@@ -62,6 +62,10 @@
         #field-selector select {
             font-size: 1em;
         }
+        #search {
+            width: 16px;
+        }
+
     </style>
 </head>
 <body>
@@ -73,9 +77,9 @@
             <option value="sourceResource.language.name">Language</option>
             <option value="sourceResource.format">Source Format</option>
             <option value="sourceResource.date.begin">Start Date</option>
-            <option value="sourceResource.spatial.name">Place Name</option>
             <option value="sourceResource.spatial.state">State</option>
-            <option value="hasView.format">Digital Format</option>
+            <option value="sourceResource.type">General Digital Format</option>
+            <option value="hasView.format">Specific Digital Format</option>
         </select>,
         then by
         <select id="inner-field">
@@ -84,12 +88,18 @@
             <option value="sourceResource.language.name">Language</option>
             <option value="sourceResource.format">Source Format</option>
             <option value="sourceResource.date.begin">Start Date</option>
-            <option value="sourceResource.spatial.name">Place Name</option>
             <option value="sourceResource.spatial.state">State</option>
-            <option value="hasView.format">Digital Format</option>
+            <option value="sourceResource.type">General Digital Format</option>
+            <option value="hasView.format">Specific Digital Format</option>
         </select>
     </div>
-<div id="rect-label"></div>
+    <div id="block-info">
+        <div><span id="record-count"></span> records where<br />
+            <span id="outer-field-label"></span>: <span id="outer-field-value"></span><br />
+            and<br />
+            <span id="inner-field-label"></span>: <span id="inner-field-value"></span><br />
+    </div>
+    <div id="search"><a href="" title="Search in DPLA"><img src="zoom.png" /></a></div>
 </body>
 
 <script type="text/javascript">
@@ -104,6 +114,13 @@
     var root;
     var node;
     var fetchedData;
+    var searchableFields = {
+    'sourceResource.contributor': 'provider[]',
+    'sourceResource.language.name': 'language[]',
+    'sourceResource.type': 'type[]',
+    'sourceResource.date.begin': 'after[]'
+    };
+    var baseUrl = 'http://166.78.241.246/search?utf8=%E2%9C%93&';
 
     var treemap = d3.layout.treemap()
             .round(false)
@@ -341,22 +358,39 @@
         yscale.domain([d.y, d.y + d.dy]);
 
         if (d.depth == 0) {
-            d3.select('#rect-label').style('opacity', 0);
+            //d3.select('#rect-label').style('opacity', 0);
             chart.selectAll(".cell.child").on('mouseenter', null).on('mouseleave', null);
             d3.select('svg').on('mousemove', null);
             chart.selectAll(".cell.child .label").style('display', '').style("opacity", 0);
         } else if (d.depth == 1) {
-            d3.select('#rect-label').transition().duration(transitionDuration + 200).style('opacity', 1);
+            //d3.select('#rect-label').transition().duration(transitionDuration + 200).style('opacity', 1);
             d3.select('svg').on('mousemove', function() {
-                d3.select('#rect-label')
-                    .style('left', function() { return (d3.select('svg').node().offsetLeft + d3.mouse(d3.select('svg').node())[0] + 15) + 'px'; })
-                    .style('top', function() { return (d3.select('svg').node().offsetTop + d3.mouse(d3.select('svg').node())[1] + 15) + 'px'; });
+                //d3.select('#rect-label')
+                    //.style('left', function() { return (d3.select('svg').node().offsetLeft + d3.mouse(d3.select('svg').node())[0] + 15) + 'px'; })
+                    //.style('top', function() { return (d3.select('svg').node().offsetTop + d3.mouse(d3.select('svg').node())[1] + 15) + 'px'; });
             });
             chart.selectAll('.cell.child')
                 .on('mouseenter', function() {
+                    var innerValue = d3.select(this).select('.label').text(),
+                        outerValue = d.name,
+                        innerFieldName = d3.selectAll('#inner-field option').filter(function() { return this.selected; }).text(),
+                        outerFieldName = d3.selectAll('#outer-field option').filter(function() { return this.selected; }).text()
+                        innerField = d3.select('#inner-field').property('value')
+                        outerField = d3.select('#outer-field').property('value')
                     d3.select(this.parentElement).selectAll('.cell.child rect').style('fill', function() { return d3.select(this).attr('data-color'); });
                     d3.select(this).select('rect').style('fill', function() { return d3.rgb(d3.select(this).attr('data-color')).brighter(0.4); });
-                    d3.select('#rect-label').html(d3.select(this).select('.label').text());
+                    d3.select('#inner-field-label').text(innerFieldName);
+                    d3.select('#outer-field-label').text(outerFieldName);
+                    d3.select('#inner-field-value').text(innerValue);
+                    d3.select('#outer-field-value').text(outerValue);
+                    d3.select('#record-count').html(d3.select(this).datum().size);
+                    var fields = Object.keys(searchableFields);
+                    if (fields.indexOf(innerField) > -1 && fields.indexOf(outerField) > -1 && innerValue != 'Other' && outerValue != 'Other') {
+                        var queryString = '';
+                        if (innerField == 'sourceResource.date.begin' || outerField == 'sourceResource.date.begin') {
+                            //queryString += 'after[year]=' + innerValue
+                        }
+                    }
                     //d3.select(this).select('.label').transition().style('opacity', 1);
                 })
                 .on('mouseleave', function() {

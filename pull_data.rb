@@ -8,9 +8,9 @@ fields = [
     'sourceResource.format',
     'sourceResource.date.begin',
     'provider.name',
-    'sourceResource.spatial.name',
     'sourceResource.spatial.state',
-    'hasView.format'
+    'sourceResource.type',
+    'hasView.format',
 ]
 permutations = fields.permutation(2).to_a
 permutations += fields.map{|f| [f, f]}
