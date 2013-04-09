@@ -387,9 +387,17 @@
                     var fields = Object.keys(searchableFields);
                     if (fields.indexOf(innerField) > -1 && fields.indexOf(outerField) > -1 && innerValue != 'Other' && outerValue != 'Other') {
                         var queryString = '';
-                        if (innerField == 'sourceResource.date.begin' || outerField == 'sourceResource.date.begin') {
-                            //queryString += 'after[year]=' + innerValue
+                        if (innerField == 'sourceResource.date.begin') { 
+                            queryString += 'after[year]=' + innerValue.slice(1, 5) + '&after[month]=' + innerValue.slice(6, 8) + '&after[day]=' + innerValue.slice(9, 11) + '&';
+                        } else {
+                            queryString += searchableFields[innerField] + '=' + innerValue + '&';
                         }
+                        if (outerField == 'sourceResource.date.begin') {
+                            queryString += 'after[year]=' + outerValue.slice(1, 5) + '&after[month]=' + outerValue.slice(6, 8) + '&after[day]=' + outerValue.slice(9, 11) + '&';
+                        } else {
+                            queryString += searchableFields[outerField] + '=' + outerValue + '&';
+                        }
+                        console.log(baseUrl + queryString);
                     }
                     //d3.select(this).select('.label').transition().style('opacity', 1);
                 })
