@@ -3,14 +3,13 @@ require 'json'
 require 'uri'
 
 fields = [
-    'sourceResource.contributor',
     'sourceResource.language.name',
     'sourceResource.format',
     'sourceResource.date.begin',
-    'provider.name',
+    'sourceResource.date.end',
     'sourceResource.spatial.state',
     'sourceResource.type',
-    'hasView.format',
+    'provider.name',
 ]
 permutations = fields.permutation(2).to_a
 permutations += fields.map{|f| [f, f]}
@@ -22,7 +21,8 @@ class JsonBuilder
         innf = inner_field
         outer_fields, inner_fields, map = {}, {}, {}
         output = { :name => 'DPLA', :children => [], :outerField => of, :innerField => innf }
-        record_percent_threshold = 0.001
+        record_percent_threshold = 0.0015
+        other_name = 'Other or Unspecified'
 
         outer_facet_set = 'terms'
         outer_facet_item = 'term'
@@ -59,7 +59,7 @@ class JsonBuilder
                 end
             end
             if other_contributed_count >= record_percent_threshold * outer_field_count
-                dpla_child[:children] << {:name => "Other", :size => other_contributed_count, :id => "#{outer_field[outer_facet_item]}-Other"}
+                dpla_child[:children] << {:name => other_name, :size => other_contributed_count, :id => "#{outer_field[outer_facet_item]}-Other"}
                 total_record_count += other_contributed_count
             end
             output[:children] << dpla_child
@@ -73,8 +73,8 @@ class JsonBuilder
             other_children << {:name => %Q|"#{iff[inner_facet_item]}"|, :size => iff['count'], :id => "Other-#{iff[inner_facet_item]}"}
         end
 
-        other_children << {:name => 'Other', :id => 'Other-Other', :size => other_record_count}
-        output[:children] << {:name => 'Other', :id => 'Other', :children => other_children}
+        other_children << {:name => other_name, :id => 'Other-Other', :size => other_record_count}
+        output[:children] << {:name => other_name, :id => 'Other', :children => other_children}
         output
     end
 end

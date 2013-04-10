@@ -63,9 +63,13 @@
             font-size: 1em;
         }
         #search {
+            position: absolute;
             width: 16px;
         }
-
+        #block-info {
+            font-size: 2em;
+            text-align:center;
+        }
     </style>
 </head>
 <body>
@@ -73,31 +77,29 @@
         Group first by
         <select id="outer-field">
             <option value="provider.name">Provider</option>
-            <option value="sourceResource.contributor">Contributor</option>
             <option value="sourceResource.language.name">Language</option>
             <option value="sourceResource.format">Source Format</option>
             <option value="sourceResource.date.begin">Start Date</option>
+            <option value="sourceResource.date.end">End Date</option>
             <option value="sourceResource.spatial.state">State</option>
             <option value="sourceResource.type">General Digital Format</option>
-            <option value="hasView.format">Specific Digital Format</option>
         </select>,
         then by
         <select id="inner-field">
             <option value="provider.name">Provider</option>
-            <option value="sourceResource.contributor">Contributor</option>
             <option value="sourceResource.language.name">Language</option>
             <option value="sourceResource.format">Source Format</option>
             <option value="sourceResource.date.begin">Start Date</option>
+            <option value="sourceResource.date.end">End Date</option>
             <option value="sourceResource.spatial.state">State</option>
             <option value="sourceResource.type">General Digital Format</option>
-            <option value="hasView.format">Specific Digital Format</option>
         </select>
     </div>
     <div id="block-info">
-        <div><span id="record-count"></span> records where<br />
-            <span id="outer-field-label"></span>: <span id="outer-field-value"></span><br />
-            and<br />
-            <span id="inner-field-label"></span>: <span id="inner-field-value"></span><br />
+        <span id="record-count"></span> records where<br />
+        <span id="outer-field-label"></span>: <span id="outer-field-value"></span><br />
+        and<br />
+        <span id="inner-field-label"></span>: <span id="inner-field-value"></span><br />
     </div>
     <div id="search"><a href="" title="Search in DPLA"><img src="zoom.png" /></a></div>
 </body>
@@ -118,7 +120,8 @@
     'sourceResource.contributor': 'provider[]',
     'sourceResource.language.name': 'language[]',
     'sourceResource.type': 'type[]',
-    'sourceResource.date.begin': 'after[]'
+    'sourceResource.date.begin': 'after[]',
+    'sourceResource.date.end': 'before[]'
     };
     var baseUrl = 'http://166.78.241.246/search?utf8=%E2%9C%93&';
 
@@ -131,7 +134,7 @@
                 return d.size;
             });
 
-    var chart = d3.select("body").append("div")
+    var chart = d3.select("body").insert("div", '#block-info')
             .attr('id', 'treemap')
             .append("svg:svg")
             .attr("width", chartWidth)
@@ -260,6 +263,7 @@
                 })
                 .attr("dy", ".35em")
                 .attr("text-anchor", "middle")
+                .style('display', 'none')
                 .text(function(d) {
                     return d.name;
                 });
@@ -291,6 +295,7 @@
                 })
                 .attr("dy", ".35em")
                 .attr("text-anchor", "middle")
+                .style('display', 'none')
                 .text(function(d) {
                     return d.name;
                 })
@@ -300,9 +305,6 @@
                 .remove();
 
     }
-
-
-
 
     function size(d) {
         return d.size;
@@ -361,7 +363,7 @@
             //d3.select('#rect-label').style('opacity', 0);
             chart.selectAll(".cell.child").on('mouseenter', null).on('mouseleave', null);
             d3.select('svg').on('mousemove', null);
-            chart.selectAll(".cell.child .label").style('display', '').style("opacity", 0);
+            chart.selectAll(".cell.child .label").style('display', 'none');
         } else if (d.depth == 1) {
             //d3.select('#rect-label').transition().duration(transitionDuration + 200).style('opacity', 1);
             d3.select('svg').on('mousemove', function() {
@@ -389,33 +391,53 @@
                         var queryString = '';
                         if (innerField == 'sourceResource.date.begin') { 
                             queryString += 'after[year]=' + innerValue.slice(1, 5) + '&after[month]=' + innerValue.slice(6, 8) + '&after[day]=' + innerValue.slice(9, 11) + '&';
+                        } else if (innerField == 'sourceResource.date.end') { 
+                            queryString += 'before[year]=' + innerValue.slice(1, 5) + '&before[month]=' + innerValue.slice(6, 8) + '&before[day]=' + innerValue.slice(9, 11) + '&';
                         } else {
-                            queryString += searchableFields[innerField] + '=' + innerValue + '&';
+                            queryString += searchableFields[innerField] + '=' + innerValue.replace(/"/g,'') + '&';
                         }
+
                         if (outerField == 'sourceResource.date.begin') {
                             queryString += 'after[year]=' + outerValue.slice(1, 5) + '&after[month]=' + outerValue.slice(6, 8) + '&after[day]=' + outerValue.slice(9, 11) + '&';
+                        } else if (outerField == 'sourceResource.date.end') {
+                            queryString += 'before[year]=' + outerValue.slice(1, 5) + '&before[month]=' + outerValue.slice(6, 8) + '&before[day]=' + outerValue.slice(9, 11) + '&';
                         } else {
-                            queryString += searchableFields[outerField] + '=' + outerValue + '&';
+                            queryString += searchableFields[outerField] + '=' + outerValue.replace(/"/g, '') + '&';
                         }
-                        console.log(baseUrl + queryString);
+
+                        var url = baseUrl + queryString;
+                        d3.select('#search a').attr('href', url);
+                        var coordinates = d3.select(this).attr('transform').slice(10, -2).split(','),
+                            that = this;
+                        d3.select('#search').style('display', '')
+                            //.style('left', function() { return d3.select('svg').node().offsetLeft + parseInt(coordinates[0]) + parseInt(d3.select(that).select('rect').attr('width')) - 20 + 'px'; })
+                            //.style('top', function() { return d3.select('svg').node().offsetTop + parseInt(coordinates[1]) + 10 + 'px'; });
                     }
                     //d3.select(this).select('.label').transition().style('opacity', 1);
                 })
                 .on('mouseleave', function() {
                     d3.select(this.parentElement).selectAll('.cell.child rect').style('fill', function() { return d3.select(this).attr('data-color'); });
+                    d3.select('#search').style('display', 'none')
                     //d3.select(this).select('.label').transition().style('opacity', 0);
                 })
         }
 
+        var numCells = chart.selectAll('g.cell')[0].length;
         var zoomTransition = chart.selectAll("g.cell").transition().duration(transitionDuration)
                 .attr("transform", function(d) {
                     return "translate(" + xscale(d.x) + "," + yscale(d.y) + ")";
                 })
-                .each("start", function() {
-                    d3.select(this).select("label")
-                            //.style("display", "none");
+                .each("start", function(d, i) {
+                    if (i == numCells - 1 && level.depth == 1) {
+                        d3.selectAll('.cell.child .label').style('opacity', 0).style('display', '');
+                    }
                 })
                 .each("end", function(d, i) {
+                        /*
+                    if (i == numCells - 1 && level.depth == 1) {
+                        d3.selectAll('.cell.child .label').style('opacity', 0).style('display', '');
+                    }
+                    */
                     if (!i && (level !== self.root)) {
                         chart.selectAll(".cell.child")
                             .filter(function(d) {
@@ -428,10 +450,9 @@
                             })
                             .style("opacity", function(d) {
                                 d.w = this.getComputedTextLength();
-                                return d3.select(this.previousSibling).attr('width') > d.w ? 1 : 0;
+                                return d3.select(this.previousSibling).attr('width') > d.w && d3.select(this.previousSibling).attr('height') > 12 ? 1 : 0;
                             })
-                            .style("display", function() { return d3.select(this).style('opacity') == 1 ? '' : 'none';});
-
+                            .style("display", function() { var value = d3.select(this).style('opacity') == 1 ? '' : 'none';});
                     }
                 });
 
